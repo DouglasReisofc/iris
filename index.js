@@ -88,6 +88,19 @@ async function checkIfAdmin(chatId, userId, chatObj = null) {
       await chat.fetchMessages({ limit: 1 });
     }
 
+    const ownerId = chat.owner
+      ? typeof chat.owner === 'string'
+        ? chat.owner
+        : chat.owner._serialized
+      : chat.groupMetadata && chat.groupMetadata.owner
+        ? chat.groupMetadata.owner._serialized
+        : null;
+
+    if (ownerId && ownerId === userId) {
+      console.log('[ADMIN CHECK]', userId, '-> owner');
+      return true;
+    }
+
     const participant = chat.participants.find(p => p.id._serialized === userId);
     const isAdm = participant ? (participant.isAdmin || participant.isSuperAdmin) : false;
 
@@ -287,7 +300,8 @@ try {
       if (media) {
         let mentions = [];
         if (mark_all) {
-          mentions = participants.filter(p => p.id.user).map(p => `${p.id.user}@c.us`);         }
+          mentions = participants.filter(p => p.id.user).map(p => p.id._serialized);
+        }
 
                 await chat.sendMessage(media, {
           caption: caption || message,
@@ -299,7 +313,8 @@ try {
     } else {
             let mentions = [];
       if (mark_all) {
-        mentions = participants.filter(p => p.id.user).map(p => `${p.id.user}@c.us`);       }
+        mentions = participants.filter(p => p.id.user).map(p => p.id._serialized);
+      }
 
             await chat.sendMessage(message, {
         mentions: mentions       });
@@ -1104,9 +1119,20 @@ case 'meuip':
             break;
           }
 
-          const mentions = admins.map(p => `${p.id.user}@c.us`);
+          const ownerId = chat.owner
+            ? (typeof chat.owner === 'string' ? chat.owner : chat.owner._serialized)
+            : chat.groupMetadata && chat.groupMetadata.owner
+              ? chat.groupMetadata.owner._serialized
+              : null;
+
+          if (ownerId && !admins.some(a => a.id._serialized === ownerId)) {
+            const [user, server] = ownerId.split('@');
+            admins.unshift({ id: { user, server, _serialized: ownerId }, isAdmin: true, isSuperAdmin: true });
+          }
+
+          const mentions = admins.map(p => p.id._serialized);
           const list = admins
-            .map(p => `@${p.id.user}${p.isSuperAdmin ? ' 👑' : ''}`)
+            .map(p => `@${p.id.user}${(p.isSuperAdmin || p.id._serialized === ownerId) ? ' 👑' : ''}`)
             .join('\n');
 
           await client.sendMessage(from, `📋 *Lista de Administradores:*\n\n${list}`, { mentions });
@@ -1138,7 +1164,18 @@ case 'meuip':
 
           const groupPic = await client.getProfilePicUrl(from).catch(() => null);
           const admins = chat.participants.filter(p => p.isAdmin || p.isSuperAdmin);
-          const superAdmin = admins.find(a => a.isSuperAdmin);
+          const ownerId = chat.owner
+            ? (typeof chat.owner === 'string' ? chat.owner : chat.owner._serialized)
+            : chat.groupMetadata && chat.groupMetadata.owner
+              ? chat.groupMetadata.owner._serialized
+              : null;
+
+          if (ownerId && !admins.some(a => a.id._serialized === ownerId)) {
+            const [user, server] = ownerId.split('@');
+            admins.unshift({ id: { user, server, _serialized: ownerId }, isAdmin: true, isSuperAdmin: true });
+          }
+
+          const superAdmin = admins.find(a => a.isSuperAdmin || a.id._serialized === ownerId);
           const adminList = admins.map(a => a.id._serialized).join('\n');
 
           const caption = `📋 *Status do Grupo*\n\n` +
@@ -1731,7 +1768,7 @@ return;
                 const group = await message.getChat();
                 await group.removeParticipants([quotedAuthor]);
         
-                await message.reply(`O participante ${quotedAuthor.replace('@c.us', '')} foi banido do grupo por motivos justos!`);
+                await message.reply(`O participante ${quotedAuthor.replace(/@.+$/, '')} foi banido do grupo por motivos justos!`);
         
                                 const quotedMessageId = quotedMsg.id._serialized;
                 await quotedMsg.delete(true);
@@ -1750,7 +1787,7 @@ return;
               const group = await message.getChat();
               await group.removeParticipants([mentionedUser]);
         
-              await message.reply(`O participante ${mentionedUser.replace('@c.us', '')} foi banido do grupo por motivos justos!`);
+              await message.reply(`O participante ${mentionedUser.replace(/@.+$/, '')} foi banido do grupo por motivos justos!`);
         
                             await message.delete(true);          
             } catch (error) {
@@ -1851,7 +1888,7 @@ return;
             if (chat.isGroup) {
               const participants = chat.participants;
               const pollMessage = await client.sendMessage(from, new Poll(tituloSorteio, options), {
-                mentions: participants.map(p => `${p.id.user}@c.us`),
+                mentions: participants.map(p => p.id._serialized),
               });
           
               sorteio.idMensagem = pollMessage.id._serialized;
@@ -2022,7 +2059,7 @@ await message.reply(msgadmin);
                 async function sendInBatches(content, options) {
           const mentions = participants
             .filter(p => p.id.user)
-            .map(p => `${p.id.user}@c.us`);
+            .map(p => p.id._serialized);
           const batches = chunkArray(mentions, 500);
 
           for (const batch of batches) {
