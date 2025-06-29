@@ -82,8 +82,17 @@ async function checkIfAdmin(chatId, userId, chatObj = null) {
   try {
     const chat = chatObj || await client.getChatById(chatId);
     if (!chat.isGroup) return false;
-    const p = chat.participants.find(x => x.id._serialized === userId);
-    return p ? (p.isAdmin || p.isSuperAdmin) : false;
+
+    // Garantir que a lista de participantes esteja carregada
+    if (!chat.participants || chat.participants.length === 0) {
+      await chat.fetchMessages({ limit: 1 });
+    }
+
+    const participant = chat.participants.find(p => p.id._serialized === userId);
+    const isAdm = participant ? (participant.isAdmin || participant.isSuperAdmin) : false;
+
+    console.log('[ADMIN CHECK]', userId, '->', isAdm);
+    return isAdm;
   } catch (error) {
     console.error('Erro ao verificar administrador:', error);
     return false;
@@ -435,10 +444,13 @@ client.on('message', async (message) => {
   console.log(chalk.greenBright(`│ Conteúdo: ${(body || '').slice(0,50)}`));
   console.log(chalk.blueBright('└─────────────────────────────────────────┘'));
 
-  const isDono = (isGroup && author === donoComSuFixo) || (!isGroup && from === donoComSuFixo);
+  const senderId = isGroup ? (author || message.id.participant || from) : from;
+  const isDono = (isGroup && senderId === donoComSuFixo) || (!isGroup && from === donoComSuFixo);
   const isGroupAdmins = isGroup
-    ? await checkIfAdmin(from, author, chat)
+    ? await checkIfAdmin(from, senderId, chat)
     : false;
+  console.log('✅ [CHECK] senderId:', senderId);
+  console.log('✅ [CHECK] isGroupAdmins:', isGroupAdmins);
   const aluguelStatus = await verificarAluguelAtivo(from);
   const isSoadm = await obterConfiguracaoGrupo(from).then(response => {
     if (response && response.success) {
