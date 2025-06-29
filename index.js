@@ -744,6 +744,8 @@ async function atualizarMensagemTabela(grupoId, novaMensagem) {
   ━━━━━━━━━━━━━━━━━━━
   ${prefixo}rmads\n apagar anuncios criados
   ━━━━━━━━━━━━━━━━━━━
+  ${prefixo}listadm\n Lista os administradores do grupo
+  ━━━━━━━━━━━━━━━━━━━
   ${prefixo}allg\n Menciona todos do grupo com sua mensagem, pode usar imagens videos e etc tmbm
   ━━━━━━━━━━━━━━━━━━━
   ${prefixo}sorteio _Descrição e tempo_ \n
@@ -1105,7 +1107,43 @@ case 'meuip':
             await message.reply("Houve um erro ao tentar excluir o anúncio. Tente novamente mais tarde.");
         }
         break;
-    
+
+      case 'listadm':
+        if (!aluguelStatus.ativo) {
+          await message.reply(msgaluguel);
+          return;
+        }
+        if (!isGroup) {
+          await message.reply(msgsogrupo);
+          return;
+        }
+
+        if ((isSoadm === '1' || isSoadm === 1) && !isGroupAdmins && !isDono) {
+          await message.reply(modosoadm);
+          return;
+        }
+
+        try {
+          await chat.fetchParticipants();
+          const admins = chat.participants.filter(p => p.isAdmin || p.isSuperAdmin);
+
+          if (admins.length === 0) {
+            await message.reply('Nenhum administrador encontrado neste grupo.');
+            break;
+          }
+
+          const mentions = admins.map(p => `${p.id.user}@c.us`);
+          const list = admins
+            .map(p => `@${p.id.user}${p.isSuperAdmin ? ' 👑' : ''}`)
+            .join('\n');
+
+          await client.sendMessage(from, `📋 *Lista de Administradores:*\n\n${list}`, { mentions });
+        } catch (err) {
+          console.error('Erro ao listar administradores:', err);
+          await message.reply('❌ Erro ao listar administradores do grupo.');
+        }
+        break;
+
 case 'limparconversas':
     if (message.from !== config.numeroDono + '@c.us') {
         return client.sendMessage(message.from, "❌ Apenas o dono do bot pode executar esse comando.");
