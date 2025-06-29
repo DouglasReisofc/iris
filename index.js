@@ -1593,25 +1593,35 @@ return;
         await message.reply(msgsogrupo);
         return;
       }
-    
+
       if ((isSoadm === '1' || isSoadm === 1) && !isGroupAdmins && !isDono) {
         await message.reply(modosoadm);
         return;
       }
-  if (!(isDono || isGroupAdmins)) {
-    await message.reply(msgadmin);
-      return;
-  }
-      if (message.hasQuotedMsg) {
-        try {
+      if (!(isDono || isGroupAdmins)) {
+        await message.reply(msgadmin);
+        return;
+      }
+
+      try {
+        if (message.hasQuotedMsg) {
           const quotedMsg = await message.getQuotedMessage();
+          await quotedMsg.delete(true);
+        } else {
+          // Procura pela mensagem mais recente enviada pelo bot e a remove
+          const msgs = await chat.fetchMessages({ limit: 10 });
+          const botMsg = msgs.find(m => m.fromMe);
 
-
-          const quotedMessageId = quotedMsg.id._serialized;
-
-                    await quotedMsg.delete(true);
-        } catch (error) {
+          if (botMsg) {
+            await botMsg.delete(true);
+          } else {
+            await message.reply('Nenhuma mensagem do bot encontrada para apagar.');
+          }
         }
+        // Remove também o comando para manter o chat limpo
+        await message.delete(true);
+      } catch (error) {
+        console.error('Erro ao tentar apagar mensagem:', error);
       }
       break;
 
