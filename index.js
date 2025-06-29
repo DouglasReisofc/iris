@@ -717,6 +717,8 @@ async function atualizarMensagemTabela(grupoId, novaMensagem) {
   ━━━━━━━━━━━━━━━━━━━
   ${prefixo}status\n Informações completas do grupo
   ━━━━━━━━━━━━━━━━━━━
+  ${prefixo}infogp ID_DO_GRUPO\n JSON completo de um grupo
+  ━━━━━━━━━━━━━━━━━━━
   ${prefixo}allg\n Menciona todos do grupo com sua mensagem, pode usar imagens videos e etc tmbm
   ━━━━━━━━━━━━━━━━━━━
   ${prefixo}sorteio _Descrição e tempo_ \n
@@ -1155,6 +1157,28 @@ case 'meuip':
           }
         } catch (err) {
           console.error('Erro ao obter status do grupo:', err);
+          await message.reply('❌ Erro ao obter informações do grupo.');
+        }
+        break;
+
+      case 'infogp':
+        if (args.length < 2) {
+          await message.reply('Use: !infogp ID_DO_GRUPO');
+          break;
+        }
+        const targetId = args[1];
+        try {
+          const infoChat = await client.getChatById(targetId);
+          await infoChat.fetchMessages({ limit: 1 });
+          const jsonInfo = JSON.stringify(infoChat, null, 2);
+          if (jsonInfo.length > 4000) {
+            const media = new MessageMedia('application/json', Buffer.from(jsonInfo).toString('base64'), 'info.json');
+            await client.sendMessage(from, media, { caption: '📄 Informações do grupo' });
+          } else {
+            await message.reply('```json\n' + jsonInfo + '\n```');
+          }
+        } catch (err) {
+          console.error('Erro ao obter info do grupo:', err);
           await message.reply('❌ Erro ao obter informações do grupo.');
         }
         break;
