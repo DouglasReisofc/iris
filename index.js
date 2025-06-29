@@ -437,7 +437,7 @@ client.on('message', async (message) => {
 
   const isDono = (isGroup && author === donoComSuFixo) || (!isGroup && from === donoComSuFixo);
   const isGroupAdmins = isGroup
-    ? chat.participants.some(p => p.id._serialized === author && (p.isAdmin || p.isSuperAdmin))
+    ? await checkIfAdmin(from, author, chat)
     : false;
   const aluguelStatus = await verificarAluguelAtivo(from);
   const isSoadm = await obterConfiguracaoGrupo(from).then(response => {
