@@ -1,0 +1,66 @@
+{
+  "grupos": {
+    "120363304718226080@g.us": {
+      "enabled": false,
+      "domains": [],
+      "patterns": []
+    }
+  },
+  "120363304718226080@g.us": {
+    "enabled": false,
+    "domains": [
+      "youtube.com"
+    ],
+    "patterns": []
+  },
+  "120363047524659943@g.us": {
+    "enabled": false,
+    "domains": [],
+    "patterns": []
+  },
+  "120363286184939788@g.us": {
+    "enabled": false,
+    "domains": [],
+    "patterns": []
+  },
+  "120363148843616237@g.us": {
+    "enabled": false,
+    "domains": [],
+    "patterns": []
+  },
+  "120363318137081118@g.us": {
+    "enabled": false,
+    "domains": [],
+    "patterns": []
+  },
+  "120363399351349669@g.us": {
+    "enabled": false,
+    "domains": [],
+    "patterns": []
+  },
+  "120363320522418415@g.us": {
+    "enabled": false,
+    "domains": [],
+    "patterns": []
+  },
+  "120363407566914327@g.us": {
+    "enabled": false,
+    "domains": [],
+    "patterns": []
+  },
+  "120363029239554302@g.us": {
+    "enabled": false,
+    "domains": [],
+    "patterns": []
+  },
+  "120363404470976265@g.us": {
+    "enabled": false,
+    "domains": [],
+    "patterns": []
+  },
+  "120363302212526780@g.us": {
+    "enabled": false,
+    "domains": [],
+    "patterns": []
+  }
+}

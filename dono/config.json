@@ -1,0 +1,15 @@
+{
+  "numeroBot": "5547992672089",
+  "nomeBot": "iris",
+  "numeroDono": "554191236158",
+  "prefixo": "!",
+  "siteapi": "https://bottechwpp.com",
+  "apikeysite": "teste",
+  "portaexpres": "7000",
+  "proxyServer": "http://186.226.58.189:6228",
+  "proxyAuth": {
+    "username": "contactgestorvip",
+    "password": "UYzqnBfusX"
+  },
+  "useProxy": "false"
+}
