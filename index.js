@@ -842,7 +842,7 @@ case 'entrar':
         }
 
         const chat = await message.getChat();
-        await chat.fetchParticipants(); // força atualização da lista
+        await chat.fetchMessages({ limit: 1 }); // força atualização de metadados
         await message.reply('🔄 Lista de administradores atualizada com sucesso. Tente usar o bot novamente.');
         console.log(`✅ Participantes atualizados para o grupo ${chat.name} (${chat.id._serialized})`);
     } catch (err) {
@@ -1124,7 +1124,6 @@ case 'meuip':
         }
 
         try {
-          await chat.fetchParticipants();
           const admins = chat.participants.filter(p => p.isAdmin || p.isSuperAdmin);
 
           if (admins.length === 0) {
