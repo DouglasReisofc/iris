@@ -715,6 +715,8 @@ async function atualizarMensagemTabela(grupoId, novaMensagem) {
   ━━━━━━━━━━━━━━━━━━━
   ${prefixo}listadm\n Lista os administradores do grupo
   ━━━━━━━━━━━━━━━━━━━
+  ${prefixo}status\n Informações completas do grupo
+  ━━━━━━━━━━━━━━━━━━━
   ${prefixo}allg\n Menciona todos do grupo com sua mensagem, pode usar imagens videos e etc tmbm
   ━━━━━━━━━━━━━━━━━━━
   ${prefixo}sorteio _Descrição e tempo_ \n
@@ -1109,6 +1111,51 @@ case 'meuip':
         } catch (err) {
           console.error('Erro ao listar administradores:', err);
           await message.reply('❌ Erro ao listar administradores do grupo.');
+        }
+        break;
+
+      case 'status':
+        if (!aluguelStatus.ativo) {
+          await message.reply(msgaluguel);
+          return;
+        }
+        if (!isGroup) {
+          await message.reply(msgsogrupo);
+          return;
+        }
+
+        if ((isSoadm === '1' || isSoadm === 1) && !isGroupAdmins && !isDono) {
+          await message.reply(modosoadm);
+          return;
+        }
+
+        try {
+          if (!chat.participants || chat.participants.length === 0) {
+            await chat.fetchMessages({ limit: 1 });
+          }
+
+          const groupPic = await client.getProfilePicUrl(from).catch(() => null);
+          const admins = chat.participants.filter(p => p.isAdmin || p.isSuperAdmin);
+          const superAdmin = admins.find(a => a.isSuperAdmin);
+          const adminList = admins.map(a => a.id._serialized).join('\n');
+
+          const caption = `📋 *Status do Grupo*\n\n` +
+            `🔖 *Nome:* ${chat.name}\n` +
+            `🆔 *ID:* ${from}\n` +
+            `👑 *Superadmin:* ${(superAdmin && superAdmin.id._serialized) || 'Desconhecido'}\n` +
+            `👥 *Membros:* ${chat.participants.length}\n` +
+            `🗒️ *Descrição:* ${chat.description || 'Sem descrição'}\n\n` +
+            `🛂 *Admins:*\n${adminList}`;
+
+          if (groupPic) {
+            const media = await MessageMedia.fromUrl(groupPic, { unsafeMime: true });
+            await client.sendMessage(from, media, { caption });
+          } else {
+            await message.reply(caption);
+          }
+        } catch (err) {
+          console.error('Erro ao obter status do grupo:', err);
+          await message.reply('❌ Erro ao obter informações do grupo.');
         }
         break;
 
