@@ -396,8 +396,6 @@ function extractCodeFromInviteLink(link) {
 
 
 
-});
-
 client.on('message', async (message) => {
   if (!message.from || !(message.body || message.caption)) return;
 
@@ -4313,7 +4311,6 @@ case 'kwai':
   }
 });
 
-app.use(express.json());
 app.use('/api/sorteios', require('./routes/sorteios'));
 
 
