@@ -78,12 +78,12 @@ const {
 } = require('./func/sorteio.js');
 
 // Verifica diretamente no grupo se o usuário possui privilégios de administrador
-async function checkIfAdmin(chatId, userId) {
+async function checkIfAdmin(chatId, userId, chatObj = null) {
   try {
-    const chat = await client.getChatById(chatId);
+    const chat = chatObj || await client.getChatById(chatId);
     if (!chat.isGroup) return false;
-    const participant = chat.participants.find(p => p.id._serialized === userId);
-    return participant ? (participant.isAdmin || participant.isSuperAdmin) : false;
+    const p = chat.participants.find(x => x.id._serialized === userId);
+    return p ? (p.isAdmin || p.isSuperAdmin) : false;
   } catch (error) {
     console.error('Erro ao verificar administrador:', error);
     return false;
@@ -396,94 +396,51 @@ function extractCodeFromInviteLink(link) {
 
 
 
-client.on('message', async (message) => {
-
-if (!message.from) {
-
-        return;
-
-    }
-
-    const remetente = message.from;
-    const isGroup = remetente.endsWith("@g.us");
-    const isPrivate = remetente.endsWith("@c.us");
-
-    // Se a mensagem estiver vazia, ignorar
-    if (!message.body) {
-        return;
-    }
-
-    console.log(chalk.blueBright('┌─────────────────────────────────────────┐'));
-    console.log(chalk.blueBright('│               DETALHES DA MENSAGEM      │'));
-    console.log(chalk.blueBright('├─────────────────────────────────────────┤'));
-    console.log(chalk.yellowBright(`│ BOT: ${nomedoBot}`));
-    console.log(chalk.yellowBright(`│ Tipo: ${message.type || 'Desconhecido'}`));
-
-    if (isGroup) {
-        console.log(chalk.yellowBright(`│ Tipo de Mensagem: Grupo`));
-        console.log(chalk.yellowBright(`│ ID do Grupo: ${remetente}`));
-    } else {
-        console.log(chalk.yellowBright(`│ Tipo de Mensagem: Privado`));
-        console.log(chalk.yellowBright(`│ Número do Remetente: ${remetente}`));
-
-        // 📌 Responder apenas uma vez no privado
-        if (!usuariosRespondidos.has(remetente)) {
-            let respostaPadrao = "🔹 Olá! Sou um robô automatizado para administração de grupos no WhatsApp.\n\n⚠️ Não sou responsável por nenhuma ação tomada no grupo, apenas obedeço comandos programados para auxiliar na moderação.\n\n📌 Se precisar de suporte ou resolver alguma questão, entre em contato com um administrador do grupo.\n\n🔹 Obrigado pela compreensão!";
-
-            try {
-                await client.sendMessage(remetente, respostaPadrao);
-                usuariosRespondidos.add(remetente);
-                console.log(chalk.greenBright(`✅ Resposta enviada para ${remetente}`));
-            } catch (error) {
-                console.error(`❌ Erro ao enviar mensagem para ${remetente}:`, error);
-            }
-        }
-    }
-
-    console.log(chalk.greenBright(`│ Conteúdo: ${message.body.slice(0, 50)}`));
-    console.log(chalk.blueBright('└─────────────────────────────────────────┘'));
-
-// 📌 Processar comandos apenas se a mensagem começar com "!"
-if (message.body.startsWith("!")) {
-    let command = message.body.split(" ")[0].toLowerCase();
-
-    if (isGroup) {
-        switch (command) {
-            case '!exemplo':
-                await client.sendMessage(message.chatId, "Este é um exemplo de comando funcionando!");
-                break;
-
-            // Adicione outros comandos aqui
-
-            default:
-                // Não exibir nada se o comando não for reconhecido (apenas ignora)
-                break;
-        }
-    }
-}
 });
 
 client.on('message', async (message) => {
+  if (!message.from || !(message.body || message.caption)) return;
 
-    // Verifica se o comando !voz está ativado e reage a palavras como "bot corno"
-    try {
-        const { verificarEExecutarResposta } = require('./func/voz.js');
-        await verificarEExecutarResposta(client, message);
-    } catch (e) {
-        console.log('[VOZ] Erro ao executar verificação de áudio automático:', e.message);
-    }
+  // Verifica se o comando !voz está ativado e reage a palavras como "bot corno"
+  try {
+    const { verificarEExecutarResposta } = require('./func/voz.js');
+    await verificarEExecutarResposta(client, message);
+  } catch (e) {
+    console.log('[VOZ] Erro ao executar verificação de áudio automático:', e.message);
+  }
 
   const { body, from, author, timestamp, type, links } = message;
-
-  const donoComSuFixo = `${config.numeroDono}@c.us`;
   const isGroup = from.endsWith('@g.us');
+  const donoComSuFixo = `${config.numeroDono}@c.us`;
 
-    const chat = await client.getChatById(from);
+  const chat = await message.getChat();
+  await chat.sendSeen();
 
-    await chat.sendSeen(); 
+  if (!isGroup && !usuariosRespondidos.has(from)) {
+    const respostaPadrao =
+      '🔹 Olá! Sou um robô automatizado para administração de grupos no WhatsApp.\n\n⚠️ Não sou responsável por nenhuma ação tomada no grupo, apenas obedeço comandos programados para auxiliar na moderação.\n\n📌 Se precisar de suporte ou resolver alguma questão, entre em contato com um administrador do grupo.\n\n🔹 Obrigado pela compreensão!';
+    try {
+      await client.sendMessage(from, respostaPadrao);
+      usuariosRespondidos.add(from);
+    } catch (error) {
+      console.error('Erro ao enviar mensagem privada:', error);
+    }
+  }
+
+  console.log(chalk.blueBright('┌─────────────────────────────────────────┐'));
+  console.log(chalk.blueBright('│               DETALHES DA MENSAGEM      │'));
+  console.log(chalk.blueBright('├─────────────────────────────────────────┤'));
+  console.log(chalk.yellowBright(`│ BOT: ${nomedoBot}`));
+  console.log(chalk.yellowBright(`│ Tipo: ${type || 'Desconhecido'}`));
+  console.log(chalk.yellowBright(isGroup ? `│ Tipo de Mensagem: Grupo` : `│ Tipo de Mensagem: Privado`));
+  console.log(chalk.yellowBright(isGroup ? `│ ID do Grupo: ${from}` : `│ Número do Remetente: ${from}`));
+  console.log(chalk.greenBright(`│ Conteúdo: ${(body || '').slice(0,50)}`));
+  console.log(chalk.blueBright('└─────────────────────────────────────────┘'));
 
   const isDono = (isGroup && author === donoComSuFixo) || (!isGroup && from === donoComSuFixo);
-  const isGroupAdmins = isGroup ? await checkIfAdmin(from, author) : false;
+  const isGroupAdmins = isGroup
+    ? chat.participants.some(p => p.id._serialized === author && (p.isAdmin || p.isSuperAdmin))
+    : false;
   const aluguelStatus = await verificarAluguelAtivo(from);
   const isSoadm = await obterConfiguracaoGrupo(from).then(response => {
     if (response && response.success) {
@@ -499,7 +456,6 @@ if (isGroup && (message.body || message.caption)) {
     try {
       const donoComSufixo = `${config.numeroDono}@c.us`;
       const isDono = (isGroup && author === donoComSufixo) || (!isGroup && from === donoComSufixo);
-      const isGroupAdmins = isGroup ? await checkIfAdmin(from, author) : false;
 
       const statusResponse = await axios.get(`https://bottechwpp.com/api/whitelist-status/${from}`);
       const isActive = statusResponse.data.enabled;
