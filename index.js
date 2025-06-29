@@ -445,20 +445,10 @@ client.on('message', async (message) => {
   console.log(chalk.blueBright('└─────────────────────────────────────────┘'));
 
   const senderId = isGroup ? (author || message.id.participant || from) : from;
-  const isDono = (isGroup && senderId === donoComSuFixo) || (!isGroup && from === donoComSuFixo);
-  const isGroupAdmins = isGroup
-    ? await checkIfAdmin(from, senderId, chat)
-    : false;
-  console.log('✅ [CHECK] senderId:', senderId);
-  console.log('✅ [CHECK] isGroupAdmins:', isGroupAdmins);
-  const aluguelStatus = await verificarAluguelAtivo(from);
-  const isSoadm = await obterConfiguracaoGrupo(from).then(response => {
-    if (response && response.success) {
-      const soadmValue = response.data.soadm;
-      return soadmValue;
-    }
-    return null;
-  });
+  let isDono = false;
+  let isGroupAdmins = false;
+  let aluguelStatus = null;
+  let isSoadm = null;
   
 if (isGroup && (message.body || message.caption)) {
   const urls = (message.body || message.caption).match(/\b\w+\.(com|net|org|vip|xyz|site|br|gov|edu|info|io|co)\b/gi);
@@ -661,7 +651,20 @@ async function atualizarMensagemTabela(grupoId, novaMensagem) {
 
   if (!body.startsWith(config.prefixo)) return;
 
-    chat.sendStateTyping(); 
+  chat.sendStateTyping();
+
+  isDono = (isGroup && senderId === donoComSuFixo) || (!isGroup && from === donoComSuFixo);
+  isGroupAdmins = isGroup ? await checkIfAdmin(from, senderId, chat) : false;
+  console.log('✅ [CHECK] senderId:', senderId);
+  console.log('✅ [CHECK] isGroupAdmins:', isGroupAdmins);
+  aluguelStatus = await verificarAluguelAtivo(from);
+  isSoadm = await obterConfiguracaoGrupo(from).then(response => {
+    if (response && response.success) {
+      const soadmValue = response.data.soadm;
+      return soadmValue;
+    }
+    return null;
+  });
 
   const prefixo = config.prefixo;
   const q = body.slice(config.prefixo.length).trim().split(' ');
